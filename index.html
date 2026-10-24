@@ -10,32 +10,48 @@
   <h2>آزمایش برنامک نوین‌آزمون</h2>
   <p id="status">در حال بررسی اتصال به ایتا...</p>
 
+  <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+
   <script>
     const status = document.getElementById("status");
 
-    if (window.Eitaa && window.Eitaa.WebApp) {
-      const app = window.Eitaa.WebApp;
-      app.ready();
+    function showStatus(message) {
+      status.textContent = message;
+    }
 
-      const user = app.initDataUnsafe?.user;
+    try {
+      if (window.Eitaa && window.Eitaa.WebApp) {
+        const app = window.Eitaa.WebApp;
+        app.ready();
 
-      if (user) {
-        status.textContent =
-          "اتصال موفق است. شناسه عددی حساب: " + user.id;
+        const user = app.initDataUnsafe?.user;
 
-        if (user.allows_write_to_pm) {
-          status.textContent += " — اجازه پیام خصوصی فعال است.";
+        if (user && user.id != null) {
+          showStatus(
+            "اتصال موفق است. شناسه عددی حساب: " + user.id
+          );
+
+          if (user.allows_write_to_pm === true) {
+            status.textContent +=
+              " — اجازه پیام خصوصی فعال است.";
+          } else {
+            status.textContent +=
+              " — اجازه پیام خصوصی هنوز تأیید نشده است.";
+          }
         } else {
-          status.textContent +=
-            " — هنوز اجازه ارسال پیام خصوصی داده نشده است.";
+          showStatus(
+            "کتابخانه ایتا شناسایی شد، اما اطلاعات حساب دریافت نشد. " +
+            "لطفاً برنامک را مستقیماً داخل ایتا باز کنید."
+          );
         }
       } else {
-        status.textContent =
-          "برنامک اجرا شده، اما اطلاعات حساب دریافت نشد.";
+        showStatus(
+          "کتابخانه ایتا بارگذاری نشد. اتصال اینترنت و اجرای برنامک " +
+          "در نسخه پشتیبانی‌شده ایتا را بررسی کنید."
+        );
       }
-    } else {
-      status.textContent =
-        "برای آزمایش، این صفحه را از داخل برنامه ایتا باز کنید.";
+    } catch (error) {
+      showStatus("هنگام بررسی اتصال خطایی رخ داد.");
     }
   </script>
 </body>
