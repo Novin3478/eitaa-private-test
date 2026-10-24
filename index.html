@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>آزمایش اتصال ایتا</title>
+</head>
+<body>
+  <h2>آزمایش برنامک نوین‌آزمون</h2>
+  <p id="status">در حال بررسی اتصال به ایتا...</p>
+
+  <script>
+    const status = document.getElementById("status");
+
+    if (window.Eitaa && window.Eitaa.WebApp) {
+      const app = window.Eitaa.WebApp;
+      app.ready();
+
+      const user = app.initDataUnsafe?.user;
+
+      if (user) {
+        status.textContent =
+          "اتصال موفق است. شناسه عددی حساب: " + user.id;
+
+        if (user.allows_write_to_pm) {
+          status.textContent += " — اجازه پیام خصوصی فعال است.";
+        } else {
+          status.textContent +=
+            " — هنوز اجازه ارسال پیام خصوصی داده نشده است.";
+        }
+      } else {
+        status.textContent =
+          "برنامک اجرا شده، اما اطلاعات حساب دریافت نشد.";
+      }
+    } else {
+      status.textContent =
+        "برای آزمایش، این صفحه را از داخل برنامه ایتا باز کنید.";
+    }
+  </script>
+</body>
+</html>
