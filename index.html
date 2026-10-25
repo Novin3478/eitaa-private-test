@@ -4,55 +4,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>آزمایش اتصال ایتا</title>
+  <title>آزمایش مجوز پیام خصوصی ایتا</title>
+  <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+  <style>
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      max-width: 520px;
+      margin: 30px auto;
+      padding: 20px;
+      line-height: 2;
+      text-align: center;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 0;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #request { background: #168b59; color: white; }
+    #refresh { background: #e8edf2; color: #222; }
+    #status {
+      padding: 12px;
+      margin-top: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+  </style>
 </head>
 <body>
-  <h2>آزمایش برنامک نوین‌آزمون</h2>
-  <p id="status">در حال بررسی اتصال به ایتا...</p>
+  <h3>آزمایش برنامک نوین‌آزمون</h3>
+  <p>برای دریافت پیام خصوصی از سامانه، ابتدا مجوز لازم را فعال کن.</p>
 
-  <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+  <div id="account">در حال بررسی حساب ایتا...</div>
+
+  <button id="request">درخواست اجازه پیام خصوصی</button>
+  <button id="refresh">بررسی دوباره وضعیت</button>
+
+  <div id="status">وضعیت هنوز بررسی نشده است.</div>
 
   <script>
-    const status = document.getElementById("status");
+    const account = document.getElementById('account');
+    const status = document.getElementById('status');
+    const requestButton = document.getElementById('request');
 
-    function showStatus(message) {
-      status.textContent = message;
-    }
+    const app = window.Eitaa && window.Eitaa.WebApp;
 
-    try {
-      if (window.Eitaa && window.Eitaa.WebApp) {
-        const app = window.Eitaa.WebApp;
-        app.ready();
-
-        const user = app.initDataUnsafe?.user;
-
-        if (user && user.id != null) {
-          showStatus(
-            "اتصال موفق است. شناسه عددی حساب: " + user.id
-          );
-
-          if (user.allows_write_to_pm === true) {
-            status.textContent +=
-              " — اجازه پیام خصوصی فعال است.";
-          } else {
-            status.textContent +=
-              " — اجازه پیام خصوصی هنوز تأیید نشده است.";
-          }
-        } else {
-          showStatus(
-            "کتابخانه ایتا شناسایی شد، اما اطلاعات حساب دریافت نشد. " +
-            "لطفاً برنامک را مستقیماً داخل ایتا باز کنید."
-          );
-        }
-      } else {
-        showStatus(
-          "کتابخانه ایتا بارگذاری نشد. اتصال اینترنت و اجرای برنامک " +
-          "در نسخه پشتیبانی‌شده ایتا را بررسی کنید."
-        );
+    function checkStatus() {
+      if (!app) {
+        account.textContent = 'کیت ایتا در دسترس نیست.';
+        status.textContent =
+          'این صفحه را داخل اپلیکیشن رسمی ایتا باز کن، نه مرورگر معمولی.';
+        requestButton.disabled = true;
+        return;
       }
-    } catch (error) {
-      showStatus("هنگام بررسی اتصال خطایی رخ داد.");
+
+      const user = app.initDataUnsafe && app.initDataUnsafe.user;
+
+      if (!user) {
+        account.textContent = 'اطلاعات حساب دریافت نشد.';
+        status.textContent =
+          'برنامک را از لینک آن در محیط ایتا باز کن.';
+        return;
+      }
+
+      account.textContent =
+        'شناسه عددی حساب: ' + user.id;
+
+      if (user.allows_write_to_pm === true) {
+        status.textContent =
+          'اجازه پیام خصوصی فعال است. اکنون ارسال آزمایشی را امتحان کن.';
+      } else {
+        status.textContent =
+          'اجازه پیام خصوصی در اطلاعات فعلی تأیید نشده است. ' +
+          'دکمه درخواست مجوز را بزن.';
+      }
     }
+
+    if (app) {
+      app.ready();
+
+      if (typeof app.onEvent === 'function') {
+        app.onEvent('writeAccessRequested', function (event) {
+          if (event && event.status === 'allowed') {
+            status.textContent =
+              'ایتا اجازه ارسال پیام خصوصی را تأیید کرد. ' +
+              'اکنون وضعیت را دوباره بررسی کن.';
+          } else {
+            status.textContent =
+              'مجوز تأیید نشد یا درخواست لغو شد.';
+          }
+        });
+      }
+    }
+
+    requestButton.addEventListener('click', function () {
+      if (!app || typeof app.requestWriteAccess !== 'function') {
+        status.textContent =
+          'متد درخواست مجوز در این نسخه از ایتا در دسترس نیست.';
+        return;
+      }
+
+      status.textContent =
+        'در انتظار پاسخ ایتا به درخواست مجوز...';
+
+      try {
+        app.requestWriteAccess(function (granted) {
+          if (granted === true) {
+            status.textContent =
+              'درخواست مجوز پذیرفته شد. وضعیت را دوباره بررسی کن.';
+          } else if (granted === false) {
+            status.textContent =
+              'مجوز داده نشد یا درخواست لغو شد.';
+          } else {
+            status.textContent =
+              'درخواست پایان یافت؛ برای نتیجه نهایی وضعیت را دوباره بررسی کن.';
+          }
+        });
+      } catch (error) {
+        status.textContent =
+          'خطا هنگام درخواست مجوز: ' + error.message;
+      }
+    });
+
+    document.getElementById('refresh')
+      .addEventListener('click', checkStatus);
+
+    checkStatus();
   </script>
 </body>
 </html>
